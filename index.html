@@ -211,11 +211,13 @@ button:focus-visible { outline:3px solid #63c99b; outline-offset:3px; }
 
   <h2 class="section-title">เส้นทาง 7 วันของฉัน</h2>
   <p class="sub">รับภารกิจแล้วค่อยกด “ทำสำเร็จแล้ว” เมื่อได้ลงมือทำจริง</p>
+  <p class="sub" id="scrollHint">👇 เลื่อนลงด้านล่างเพื่อรับภารกิจ</p>
   <div class="days" id="days" aria-label="ความคืบหน้า 7 วัน"></div>
   <div class="panel" style="margin-top:12px">
     <div class="row"><div><strong id="selectedTitle">ยังไม่ได้รับภารกิจ</strong><div class="note" id="selectedDesc" style="margin:3px 0 0">เลือกภารกิจด้านบนเพื่อเริ่มต้น</div></div><span id="selectedIcon" style="font-size:1.6rem">🌱</span></div>
     <button class="success" id="complete" style="width:100%;margin-top:14px" disabled>✓ ทำสำเร็จแล้ว</button>
     <div class="feedback" id="doneFeedback"></div>
+    <button class="secondary" id="restart" type="button" style="width:100%;margin-top:12px;display:none">🔄 เริ่มภารกิจใหม่ 7 วัน</button>
   </div>
 
   <div class="bottom"><strong>จำไว้:</strong> เป้าหมายคือการเริ่มต้น ไม่ใช่ความสมบูรณ์แบบ หากวันไหนทำไม่ได้ ไม่เป็นไร ลองใหม่ได้ในวันถัดไป เลือกกิจกรรมให้เหมาะกับสุขภาพและความสามารถของตนเอง</div>
@@ -276,7 +278,11 @@ function loadProgress(){
 }
 function renderMission(i){current=i;const m=missions[i];$('emoji').textContent=m.e;$('missionTitle').textContent=m.t;$('missionDesc').textContent=m.d;$('missionTag').textContent="หมวด: "+m.tag;$('feedback').classList.remove('show')}
 function renderDays(){const days=$('days');days.innerHTML="";for(let i=0;i<7;i++){const el=document.createElement('div');el.className="day"+(i===completed.size?" active":"")+(completed.has(i)?" done":"");el.innerHTML="<strong>"+(completed.has(i)?"✓":i+1)+"</strong>"+(completed.has(i)?"สำเร็จ":"วันที่");el.setAttribute('aria-label',"วันที่ "+(i+1)+(completed.has(i)?" สำเร็จ":""));days.appendChild(el)}$('counter').textContent="สำเร็จแล้ว "+completed.size+"/7 วัน";$('bar').style.width=(completed.size/7*100)+"%";$('dayTitle').textContent=completed.size>=7?"🎉 ครบทั้ง 7 วันแล้ว!":"วันที่ "+(completed.size+1)+" · "+["เริ่มต้นง่าย ๆ","ทำต่ออีกนิด","สร้างจังหวะใหม่","เลือกสิ่งที่ดี","สะสมความสม่ำเสมอ","ใกล้ถึงเป้าหมาย","ฉลองความตั้งใจ"][completed.size]}
+function updateRestartButton(){
+  $("restart").style.display=completed.size>=7?"block":"none";
+}
 function renderAccepted(){
+  updateRestartButton();
   if(accepted!==null && !completed.has(completed.size)){
     const m=missions[accepted];$('selectedTitle').textContent=m.t;$('selectedDesc').textContent=m.d;$('selectedIcon').textContent=m.e;$('complete').disabled=completed.size>=7;
   } else {
@@ -321,6 +327,16 @@ $('complete').addEventListener('click',()=>{
   $('encourageText').textContent="เยี่ยมมาก! คุณได้ลงมือทำเพื่อสุขภาพของตัวเองอีกหนึ่งก้าวแล้ว 💚";
   $('doneFeedback').textContent=day===6?"🎉 คุณทำครบ 7 วันแล้ว! ทุกก้าวเล็ก ๆ มีความหมาย ลองรักษานิสัยที่ชอบไว้ต่อไป":"🎉 บันทึกความสำเร็จของวันนี้แล้ว พรุ่งนี้กลับมาทำภารกิจเล็ก ๆ กันต่อ";$('doneFeedback').classList.add('show');
   accepted=null;renderDays();renderAccepted();saveProgress();
+});
+$("restart").addEventListener("click",()=>{
+  if(completed.size<7)return;
+  if(!window.confirm("ต้องการเริ่มภารกิจใหม่ตั้งแต่วันที่ 1 ใช่หรือไม่? ความคืบหน้า 7 วันเดิมจะถูกลบ"))return;
+  current=0;accepted=null;completed=new Set();used=[0];
+  $("encourageText").textContent=encouragements[0];
+  $("feedback").textContent="";$("feedback").classList.remove("show");
+  $("doneFeedback").textContent="";$("doneFeedback").classList.remove("show");
+  renderMission(current);renderDays();renderAccepted();saveProgress();
+  document.getElementById("dayTitle").scrollIntoView({behavior:"smooth",block:"start"});
 });
 // Restore the last saved mission and progress when the page is reopened.
 loadProgress();renderMission(current);renderDays();renderAccepted();
